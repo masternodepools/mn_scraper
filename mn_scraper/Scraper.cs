@@ -36,7 +36,7 @@ namespace mn_scraper
             int cols = 4;
             string[,] coinTable = new string[rows, cols];
 
-            int j = 0;
+            int loopIndex = 0;
             int col = 0;
             int row = 0;
             foreach (HtmlNode node in nodes.Descendants())
@@ -48,13 +48,11 @@ namespace mn_scraper
                     continue;
                 }
 
-                if (j < 4) row = 0;
-                else if (j < 8) row = 1;
-                else if (j < 12) row = 2;
-                col = j % 4 == 0 ? 0 : col + 1;
+                row = loopIndex > 0 && loopIndex % 4 == 0 ? row + 1 : row;
+                col = loopIndex % 4 == 0 ? 0 : col + 1;
 
                 coinTable[row, col] = node.GetDirectInnerText();
-                j++;
+                loopIndex++;
             }
 
             return new Coin(coinTable, rows, cols);
