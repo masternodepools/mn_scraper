@@ -1,10 +1,11 @@
 using HtmlAgilityPack;
+using MnScraper.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace mn_scraper
+namespace MnScraper
 {
     public class Scraper
     {
@@ -140,7 +141,7 @@ namespace mn_scraper
 
         public async Task RunScraper()
         {
-            List<Tuple<MasterNode, Coin>> scraperResult = new List<Tuple<MasterNode, Coin>>();
+            List<Tuple<MasterNode, Coin>> scraperResult = new List<Tuple<MasterNode, Coin>>();                         
 
             foreach (string url in _urls)
             {

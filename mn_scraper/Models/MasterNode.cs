@@ -1,6 +1,6 @@
 using System;
 
-namespace mn_scraper
+namespace MnScraper.Models
 {
     public class MasterNode
     {
