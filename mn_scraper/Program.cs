@@ -1,10 +1,7 @@
-﻿using HtmlAgilityPack;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using MnScraper.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace MnScraper
@@ -13,7 +10,8 @@ namespace MnScraper
     {
         static async Task Main(string[] args)
         {
-            string[] urls = new string[] { "https://masternodes.online/currencies/SAPP/" };
+            Console.WriteLine("Start of main");
+            string[] urls = new string[] { "https://masternodes.online/currencies/SAPP" };
 
 
             var config = GetConfiguration();
@@ -22,12 +20,19 @@ namespace MnScraper
                 .GetSection("AwsSettings")
                 .Get<AwsSettings>();
 
-            Scraper scraper = new Scraper(urls);
-            Console.WriteLine("run scraper");
-            await scraper.RunScraper();
-            Console.WriteLine("done scraper");
+            Scraper scraper = new Scraper(urls, awsSettings);
 
+            Console.WriteLine("run scraper");
+
+            //var doc = Document.FromJson(JsonConvert.SerializeObject(coin));
+
+            //Console.WriteLine("doc = {0}", doc.ToJson());
+
+            await scraper.RunScraper();
+
+            Console.WriteLine("done scraper");
         }
+
 
         private static IConfiguration GetConfiguration()
         {

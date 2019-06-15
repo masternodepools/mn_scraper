@@ -27,9 +27,8 @@ namespace MnScraper.Models
                     Console.WriteLine("default case");
                     break;
             }
-
         }
-        public Coin(string[,] coinData, int rows, int cols)
+        public void SetPriceStats(string[,] coinData, int rows, int cols)
         {
             for (int row = 1; row < rows; row++)
             {
@@ -40,6 +39,7 @@ namespace MnScraper.Models
             }
         }
 
+        public string Symbol { get; set; }
         public string Price { get; set; }
         public string PriceInBitCoin { get; set; }
         public string Volume { get; set; }
@@ -47,5 +47,8 @@ namespace MnScraper.Models
         public string MarketCap { get; set; }
         public string MarketCapInBitCoin { get; set; }
         public string Change { get; set; }
+        public string RewardPerDay { get; set; }
+        public string NumberOfMasterNodes { get; set; }
+        public string RequiredAmount { get; set; }
     }
 }

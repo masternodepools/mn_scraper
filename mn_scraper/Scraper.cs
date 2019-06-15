@@ -1,5 +1,6 @@
 using HtmlAgilityPack;
 using MnScraper.Models;
+using MnScraper.Services;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,13 +11,17 @@ namespace MnScraper
     public class Scraper
     {
 
-        private string[] _urls;
-        private const string REWARD_PER_DAY_SEARCH = "Paid rewards for masternodes:";
-        private const string NUMER_OF_MASTER_NODES_SEARCH = "Active masternodes:";
-        private const string REQUIRED_AMOUNT_SEARCH = "Required coins for masternode:";
-        public Scraper(string[] urls)
+        private readonly string[] _urls;
+        private readonly ScraperDbService _scraperDbService;
+
+        private const int ROWS = 3;
+        private const int COLS = 4;
+        private const int SYMBOL_INDEX = 38;
+
+        public Scraper(string[] urls, AwsSettings awsSettings)
         {
             this._urls = urls;
+            this._scraperDbService = new ScraperDbService(awsSettings);
         }
 
         private async Task<string> GetHtmlAsync(string url)
@@ -31,11 +36,9 @@ namespace MnScraper
 
         }
 
-        private Coin ParseCoinStats(HtmlNode nodes)
+        private string[,] ParsePriceStats(HtmlNode nodes)
         {
-            int rows = 3;
-            int cols = 4;
-            string[,] coinTable = new string[rows, cols];
+            string[,] coinTable = new string[ROWS, COLS];
 
             int loopIndex = 0;
             int col = 0;
@@ -56,17 +59,17 @@ namespace MnScraper
                 loopIndex++;
             }
 
-            return new Coin(coinTable, rows, cols);
+            return coinTable;
 
         }
 
-        private Coin GetCoinStats(HtmlNode node)
+        private string[,] GetPriceStats(HtmlNode node)
         {
-            if (String.IsNullOrEmpty(node.GetDirectInnerText()))
+            if (String.IsNullOrEmpty(node.InnerHtml.Trim()))
             {
                 return null;
             }
-            else if (node.GetDirectInnerText().Contains("PRICE STATS"))
+            else if (node.InnerHtml.Contains("PRICE STATS"))
             {
                 var sibling = node.NextSibling;
                 while (sibling != null)
@@ -76,15 +79,13 @@ namespace MnScraper
                         sibling = sibling.NextSibling;
                         continue;
                     }
-
-                    return ParseCoinStats(sibling);
+                    return ParsePriceStats(sibling);
                 }
             }
-
             return null;
         }
 
-        private string getMasterNodeStats(HtmlNode node, string searchString)
+        private string GetSibblingOfSearchString(HtmlNode node, string searchString)
         {
             if (node.GetDirectInnerText() != searchString)
             {
@@ -104,62 +105,62 @@ namespace MnScraper
         }
 
 
-        private (MasterNode, Coin) ParseHtmlAndGetData(IEnumerable<HtmlNode> nodes)
+        private Coin ParseHtmlAndGetData(IEnumerable<HtmlNode> nodes)
         {
-            string rewardPerDay = "";
-            string numberOfMasterNodes = "";
-            string requiredAmount = "";
-            Coin coinData = null;
+            string[,] priceStatsTable = null;
+            Coin coinData = new Coin();
 
             foreach (var node in nodes)
             {
-                if (coinData == null)
+                if (priceStatsTable == null)
                 {
-                    coinData = GetCoinStats(node);
+                    priceStatsTable = GetPriceStats(node);
                 }
-                if (String.IsNullOrEmpty(rewardPerDay))
+                if (String.IsNullOrEmpty(coinData.RewardPerDay))
                 {
-                    rewardPerDay = getMasterNodeStats(node, REWARD_PER_DAY_SEARCH);
+                    coinData.RewardPerDay = GetSibblingOfSearchString(node, "Paid rewards for masternodes:");
                 }
-                if (String.IsNullOrEmpty(numberOfMasterNodes))
+                if (String.IsNullOrEmpty(coinData.NumberOfMasterNodes))
                 {
-                    numberOfMasterNodes = getMasterNodeStats(node, NUMER_OF_MASTER_NODES_SEARCH);
+                    coinData.NumberOfMasterNodes = GetSibblingOfSearchString(node, "Active masternodes:");
+
                 }
-                if (String.IsNullOrEmpty(requiredAmount))
+                if (String.IsNullOrEmpty(coinData.RequiredAmount))
                 {
-                    requiredAmount = getMasterNodeStats(node, REQUIRED_AMOUNT_SEARCH);
+                    coinData.RequiredAmount = GetSibblingOfSearchString(node, "Required coins for masternode:");
                 }
                 else
                 {
                     break;
                 }
             }
-
-            MasterNode masterNodeData = new MasterNode(rewardPerDay, numberOfMasterNodes, requiredAmount);
-            return (masterNodeData, coinData);
+            coinData.SetPriceStats(priceStatsTable, ROWS, COLS);
+            return coinData;
         }
 
         public async Task RunScraper()
         {
-            List<Tuple<MasterNode, Coin>> scraperResult = new List<Tuple<MasterNode, Coin>>();                         
-
             foreach (string url in _urls)
             {
                 var html = await GetHtmlAsync(url);
 
                 HtmlDocument htmlDocument = new HtmlDocument();
+
                 htmlDocument.LoadHtml(html);
 
                 var body = htmlDocument.DocumentNode.SelectSingleNode("//body");
+                Coin coinData = ParseHtmlAndGetData(body.Descendants());
 
-                (MasterNode masterNodeData, Coin coinData) = ParseHtmlAndGetData(body.Descendants());
+                coinData.Symbol = url.Substring(SYMBOL_INDEX);
 
-                scraperResult.Add(new Tuple<MasterNode, Coin>(masterNodeData, coinData));
-
-                Console.WriteLine("scraperResult = {0}", scraperResult);
-                Console.WriteLine("Price = {0}, PriceInBitCoin = {1}, Volume = {2}, VolumeInBitCoin = {3}, MarketCap = {4}, MarketCapInBitCoin = {5}, Change = {6}", coinData.Price, coinData.PriceInBitCoin, coinData.Volume, coinData.VolumeInBitCoin, coinData.MarketCap, coinData.MarketCapInBitCoin, coinData.Change);
-                Console.WriteLine("rewardPerDay = {0}, numberOfMasteNodes = {1}, requierdAmount = {2}", masterNodeData.RewardPerDay, masterNodeData.NumberOfMasterNodes, masterNodeData.RequiredAmount);
+                await SaveScraperResult(coinData);                                
             }
+        }
+
+
+        private async Task SaveScraperResult(Coin coinData)
+        {
+            await _scraperDbService.SaveCoinData(coinData);
         }
     }
 }

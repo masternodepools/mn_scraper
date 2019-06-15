@@ -3,7 +3,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using MnScraper.Models;
 using Newtonsoft.Json;
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 
 namespace MnScraper.Services
@@ -14,16 +14,25 @@ namespace MnScraper.Services
 
 
 
-        public ScraperDbService()
-        {            
-            var client = new AmazonDynamoDBClient();
+        public ScraperDbService(AwsSettings settings)
+        {
+
+            var region = RegionEndpoint.GetBySystemName(settings.Region);
+            var client = new AmazonDynamoDBClient(
+                settings.AccessId,
+                settings.AccessSecret,
+                region);
+
             _coinTable = Table.LoadTable(client, "CoinData");
         }
 
         public async Task SaveCoinData(Coin coinData)
         {
             var doc = Document.FromJson(JsonConvert.SerializeObject(coinData));
-            await _coinTable.UpdateItemAsync(doc);
+            Console.WriteLine("DOC: {0}", doc.ToJsonPretty());
+            Console.WriteLine("updating dynamoDb...");
+            //await _coinTable.UpdateItemAsync(doc);
+            Console.WriteLine("Updated OK");
         }
     }
 }
