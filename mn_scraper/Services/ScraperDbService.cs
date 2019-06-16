@@ -31,8 +31,15 @@ namespace MnScraper.Services
             var doc = Document.FromJson(JsonConvert.SerializeObject(coinData));
             Console.WriteLine("DOC: {0}", doc.ToJsonPretty());
             Console.WriteLine("updating dynamoDb...");
-            //await _coinTable.UpdateItemAsync(doc);
-            Console.WriteLine("Updated OK");
+            try
+            {
+                await _coinTable.UpdateItemAsync(doc);
+                Console.WriteLine("Updated OK");
+            }
+            catch(AmazonDynamoDBException exception)
+            {
+                Console.WriteLine("Exception {0}", exception);
+            }            
         }
     }
 }

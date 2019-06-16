@@ -153,14 +153,11 @@ namespace MnScraper
 
                 coinData.Symbol = url.Substring(SYMBOL_INDEX);
 
-                await SaveScraperResult(coinData);                                
+                Int32 timestamp = (Int32)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                coinData.Timestamp = timestamp.ToString();                
+                
+                await _scraperDbService.SaveCoinData(coinData);
             }
-        }
-
-
-        private async Task SaveScraperResult(Coin coinData)
-        {
-            await _scraperDbService.SaveCoinData(coinData);
         }
     }
 }

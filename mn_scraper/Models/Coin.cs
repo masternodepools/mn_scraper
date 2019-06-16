@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 
 namespace MnScraper.Models
@@ -39,16 +40,40 @@ namespace MnScraper.Models
             }
         }
 
+        [JsonProperty("symbol")]
         public string Symbol { get; set; }
+
+        [JsonProperty("price")]
         public string Price { get; set; }
+
+        [JsonProperty("priceInBitCoin")]
         public string PriceInBitCoin { get; set; }
+
+        [JsonProperty("volume")]
         public string Volume { get; set; }
+
+        [JsonProperty("volumeInBitCoin")]
         public string VolumeInBitCoin { get; set; }
+
+        [JsonProperty("marketCap")]
         public string MarketCap { get; set; }
+
+        [JsonProperty("marketCapInBitCoin")]
         public string MarketCapInBitCoin { get; set; }
+
+        [JsonProperty("change")]
         public string Change { get; set; }
+
+        [JsonProperty("rewardPerDay")]
         public string RewardPerDay { get; set; }
+
+        [JsonProperty("numerOfMasterNodes")]
         public string NumberOfMasterNodes { get; set; }
+
+        [JsonProperty("requiredAmount")]
         public string RequiredAmount { get; set; }
+
+        [JsonProperty("timestamp")]
+        public string Timestamp { get; set; }
     }
 }
